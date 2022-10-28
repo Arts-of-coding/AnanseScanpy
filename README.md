@@ -15,7 +15,7 @@ $ conda config --add channels bioconda
 $ conda config --add channels conda-forge
 ```
 
-# Install package through Pypi
+# Install package through PyPI
 ```
 $ conda create -n anansescanpy python=3.10
 $ conda activate anansescanpy
