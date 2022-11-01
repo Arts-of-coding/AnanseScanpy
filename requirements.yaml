@@ -1,0 +1,19 @@
+name: AnanseScanpy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python >=3.10
+  - scanpy >=1.9.1
+#  - numba >=0.56.3  # numpy
+  - numpy >=1.23.3
+  - anndata >=0.8.0  # for convenience
+  - scipy >=1.9.1
+  - pandas >=1.4.4
+  - jupyterlab >=3.3.4  # for convenience
+
+# for development
+  - black
+  - pytest
+  - pip >=22.2.2
