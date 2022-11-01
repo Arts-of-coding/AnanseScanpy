@@ -20,7 +20,7 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     cluster_id: ID used for finding clusters of cells
     Usage:
     ---
-    >>> from AnanseScanpy import export_CPM_scANANSE
+    >>> from anansescanpy import export_CPM_scANANSE
     >>> export_CPM_scANANSE(adata)
     """
     adata = anndata
@@ -104,7 +104,7 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
     cluster_id: ID used for finding clusters of cells
     Usage:
     ---
-    >>> from AnanseScanpy import export_ATAC_scANANSE
+    >>> from anansescanpy import export_ATAC_scANANSE
     >>> export_ATAC_scANANSE(adata)
     """
     adata = anndata
@@ -172,7 +172,7 @@ def config_scANANSE(
     additional_contrasts: additional contrasts to add between clusters within cluster_ID
     Usage:
     ---
-    >>> from AnanseScanpy import config_scANANSE
+    >>> from anansescanpy import config_scANANSE
     >>> config_scANANSE(adata)
     """
     adata = anndata
@@ -273,7 +273,7 @@ def DEGS_scANANSE(
     genome_name: the genome used for mapping
     Usage:
     ---
-    >>> from AnanseScanpy import DEGS_scANANSE
+    >>> from anansescanpy import DEGS_scANANSE
     >>> DEGS_scANANSE(adata)
     """
     adata = anndata
