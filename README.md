@@ -47,5 +47,5 @@ $ python3
 $ jupyter notebook
 ```
 
-## For extended documentation see our ipynb vignette
-TODO
+## For extended documentation see our ipynb vignette with PBMC sample data
+
