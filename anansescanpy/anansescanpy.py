@@ -358,3 +358,63 @@ def DEGS_scANANSE(
             DEGS_output.index = A
             DEGS_output = DEGS_output.T
             DEGS_output.to_csv(DEG_file, sep="\t", index=True, index_label=False)
+
+def import_scanpy_scANANSE(anndata,cluster_id = 'leiden_new',anansnake_inf_dir = 'None'
+                           ,unified_contrast='average'):
+    """export_CPM_scANANSE
+    This function imports the influence results from anansnake into the scanpy 
+    object and returns a dataframe with influence scores of bulk clusters
+    
+    Params:
+    ---
+    anndata object
+    cluster_id: ID used for finding clusters of cells
+    anansnake_inf_dir: directory of the anansnake output
+    unified_contrast: the contrast where all populations were compared to with ANANSE
+    Usage:
+    ---
+    >>> from anansescanpy import export_CPM_scANANSE
+    >>> export_CPM_scANANSE(adata)
+    """
+    adata = anndata
+    appended_data = []
+    for file in os.listdir(anansnake_inf_dir):
+        if file.endswith('.tsv'):
+            if unified_contrast in file:
+                if not 'diffnetwork' in file:
+                    filedir= anansnake_inf_dir+file
+                    influence_data= pd.read_csv(filedir,sep='\t',index_col=0)
+                    influence_data= influence_data[["influence_score"]]
+                    cluster= file.split("_")[1]
+                    influence_data= influence_data.rename(columns={'influence_score': cluster})
+                    
+    # store DataFrame in list
+                    appended_data.append(influence_data)
+        
+    # Insert 0 values where Nan is seen
+    appended_data= pd.concat(appended_data)
+    appended_data= appended_data.replace(np.nan,0)
+
+    # Generate a influence score dataframe for export and process the appended_data for anndata
+    joined_data= appended_data.transpose()
+    joined_data= joined_data.groupby(joined_data.columns, axis=1).sum()
+    output= joined_data
+    joined_data= joined_data.add_suffix('_influence')
+    joined_data[cluster_id]= joined_data.index
+    
+    # Retrieve the cluster IDs and cell IDs from the anndata object
+    df= pd.DataFrame(adata.obs[cluster_id])
+    df["cells"]=df.index.astype("string")
+    
+    # Merge the processed appended_data together with the cell ID df
+    df_obs= joined_data.merge(df, on=cluster_id,how='left')
+    df_obs=df_obs.drop(columns=[cluster_id])
+    
+    # Merge the observation dataframe with anndata obs
+    adata.obs["cells"]=adata.obs.index.astype("string")
+    adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
+    adata.obs.index=adata.obs["cells"]
+    adata.obs
+    
+    return output
+    
