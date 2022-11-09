@@ -359,8 +359,13 @@ def DEGS_scANANSE(
             DEGS_output = DEGS_output.T
             DEGS_output.to_csv(DEG_file, sep="\t", index=True, index_label=False)
 
-def import_scanpy_scANANSE(anndata,cluster_id = 'leiden_new',anansnake_inf_dir = 'None'
-                           ,unified_contrast='average'):
+
+def import_scanpy_scANANSE(
+    anndata,
+    cluster_id = 'leiden_new',
+    anansnake_inf_dir = 'None',
+    unified_contrast='average'
+):
     """export_CPM_scANANSE
     This function imports the influence results from anansnake into the scanpy 
     object and returns a dataframe with influence scores of bulk clusters

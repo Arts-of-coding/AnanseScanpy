@@ -1,11 +1,12 @@
-# AnanseScanpy
-Implementation of scANANSE for Scanpy objects in Python
-
-# Getting started
+# AnanseScanpy: implementation of scANANSE for Scanpy objects in Python
+[![PyPI version](https://badge.fury.io/py/anansescanpy.svg)](https://badge.fury.io/py/anansescanpy)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/anansescanpy/README.html)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/anansescanpy/badges/version.svg)](https://anaconda.org/bioconda/anansescanpy)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/anansescanpy/badges/downloads.svg)](https://anaconda.org/bioconda/anansescanpy)
 
 ## Installation
 
-The most straightforward way to install AnanseScanpy is via conda using pypi.
+The most straightforward way to install the most recent version of AnanseScanpy is via conda using PyPI.
 
 ### Install package through Conda
 If you have not used Bioconda before, first set up the necessary channels (in this order!). 
@@ -47,5 +48,9 @@ $ python3
 $ jupyter notebook
 ```
 
-For extended documentation see our ipynb vignette with PBMC sample data
-
+## For extended documentation see our ipynb vignette with PBMC sample data
+### Of which the sample data can be downloaded
+```
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad
+```
