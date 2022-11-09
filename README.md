@@ -51,6 +51,6 @@ $ jupyter notebook
 ## For extended documentation see our ipynb vignette with PBMC sample data
 ### Of which the sample data can be downloaded
 ```
-$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad
-$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
 ```
