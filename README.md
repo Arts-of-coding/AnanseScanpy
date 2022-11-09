@@ -6,7 +6,7 @@
 
 ## Installation
 
-The most straightforward way to install AnanseScanpy is via conda using pypi.
+The most straightforward way to install the most recent version of AnanseScanpy is via conda using PyPI.
 
 ### Install package through Conda
 If you have not used Bioconda before, first set up the necessary channels (in this order!). 
@@ -48,5 +48,9 @@ $ python3
 $ jupyter notebook
 ```
 
-For extended documentation see our ipynb vignette with PBMC sample data
-
+###For extended documentation see our ipynb vignette with PBMC sample data
+Of which the sample data can be downloaded
+```
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad
+$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad
+```
