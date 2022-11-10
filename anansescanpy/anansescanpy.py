@@ -11,7 +11,6 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     """export_CPM_scANANSE
     This functions exports CPM values from an anndata object on the raw count sparce matrix: anndata.X
     This requires setting the raw count matrix as anndata.X
-
     Params:
     ---
     anndata object
@@ -23,11 +22,11 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     >>> from anansescanpy import export_CPM_scANANSE
     >>> export_CPM_scANANSE(adata)
     """
-    adata = anndata
+    adata = anndata.copy()
     adata.layers["counts"] = adata.X
+    adata.raw = adata
     if not outputdir == "":
         os.makedirs(outputdir, exist_ok=True)
-    sc.pp.normalize_total(adata, target_sum=1e6, inplace=True, layer="counts")
     rna_count_lists = list()
     FPKM_count_lists = list()
     cluster_names = list()
@@ -39,29 +38,27 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
         n_cells = adata.obs[cluster_id].value_counts()[i]
 
         if n_cells > min_cells:
-
-            print(
-                str("gather data from " + cluster + " with " + str(n_cells) + " cells")
-            )
             cluster_names.append(str(cluster))
 
             # Generate the raw count file
-            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])]
+            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
+            adata_sel.raw=adata_sel
+            n_cells = int(adata_sel.obs[cluster_id].value_counts())
+            
+            print(
+                str("gather data from " + cluster + " with " + str(n_cells) + " cells")
+            )
+            
             X_clone = adata_sel.X.tocsc()
             X_clone.data = np.ones(X_clone.data.shape)
             NumNonZeroElementsByColumn = X_clone.sum(0)
             rna_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
-
-            # Generate the FPKM/CPM count file
-            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])]
-            adata_sel2 = adata[adata.obs[cluster_id].isin([cluster])].copy()
-            del adata_sel2.layers["counts"]
-            X_clone = adata_sel2.X.tocsc()
-            X_clone.data = np.ones(X_clone.data.shape)
-            NumNonZeroElementsByColumn = X_clone.sum(0)
+            sc.pp.normalize_total(adata_sel, target_sum=1e6, inplace=True)
+            X_clone2=adata_sel.X.toarray()
+            NumNonZeroElementsByColumn = [X_clone2.sum(0)]
             FPKM_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
-
+            
             i = (
                 i + 1
             )  # Increase i to add clusters iteratively to the cluster_names list
