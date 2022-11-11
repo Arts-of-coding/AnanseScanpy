@@ -348,7 +348,7 @@ def DEGS_scANANSE(
             l2fc = adata.uns["rank_genes_groups"]["logfoldchanges"][comparison1]
             padj = adata.uns["rank_genes_groups"]["pvals_adj"][comparison1]
             A = ["log2FoldChange", "padj"]
-            B = adata.var.index
+            B = adata.uns["rank_genes_groups"]['names'][comparison1]
             C = [l2fc, padj]
 
             DEGS_output = pd.DataFrame(C, columns=B)
@@ -363,7 +363,7 @@ def import_scanpy_scANANSE(
     anansnake_inf_dir = 'None',
     unified_contrast='average'
 ):
-    """export_CPM_scANANSE
+    """import_scanpy_scANANSE
     This function imports the influence results from anansnake into the scanpy 
     object and returns a dataframe with influence scores of bulk clusters
     
@@ -375,8 +375,9 @@ def import_scanpy_scANANSE(
     unified_contrast: the contrast where all populations were compared to with ANANSE
     Usage:
     ---
-    >>> from anansescanpy import export_CPM_scANANSE
-    >>> export_CPM_scANANSE(adata)
+    >>> from anansescanpy import import_scanpy_scANANSE
+    >>> df = import_scanpy_scANANSE(adata,cluster_id="predicted.id",
+                       anansnake_inf_dir="/AnanseScanpy_outs/influence/")
     """
     adata = anndata
     appended_data = []
