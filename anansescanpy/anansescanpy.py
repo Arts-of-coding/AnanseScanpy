@@ -30,21 +30,18 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     rna_count_lists = list()
     FPKM_count_lists = list()
     cluster_names = list()
-    i = 0
 
     for cluster in adata.obs[cluster_id].astype("category").unique():
 
-        # Only use ANANSE on clusters with more than 50 cells
-        n_cells = adata.obs[cluster_id].value_counts()[i]
+        # Only use ANANSE on clusters with more than minimal amount of cells
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
 
         if n_cells > min_cells:
             cluster_names.append(str(cluster))
 
             # Generate the raw count file
-            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel.raw=adata_sel
-            n_cells = int(adata_sel.obs[cluster_id].value_counts())
             
             print(
                 str("gather data from " + cluster + " with " + str(n_cells) + " cells")
@@ -58,10 +55,6 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
             X_clone2=adata_sel.X.toarray()
             NumNonZeroElementsByColumn = [X_clone2.sum(0)]
             FPKM_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
-            
-        i = (
-            i + 1
-        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # Specify the df.index
     df = adata.T.to_df()
@@ -108,21 +101,18 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
         os.makedirs(outputdir, exist_ok=True)
     atac_count_lists = list()
     cluster_names = list()
-    i = 0
 
     for cluster in adata.obs[cluster_id].astype("category").unique():
 
-        # Only use ANANSE on clusters with more than 50 cells
-        n_cells = adata.obs[cluster_id].value_counts()[i]
+        # Only use ANANSE on clusters with more than minimal amount of cells
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
 
         if n_cells > min_cells:
             cluster_names.append(str(cluster))
 
             # Generate the raw count file
-            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel.raw=adata_sel
-            n_cells = int(adata_sel.obs[cluster_id].value_counts())
             
             print(
                 str("gather data from " + cluster + " with " + str(n_cells) + " cells")
@@ -132,10 +122,6 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
             X_clone.data = np.ones(X_clone.data.shape)
             NumNonZeroElementsByColumn = X_clone.sum(0)
             atac_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
-
-        i = (
-            i + 1
-        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # Generate the count matrix df
     atac_count_lists = pd.DataFrame(atac_count_lists)
@@ -179,20 +165,16 @@ def config_scANANSE(
     if not outputdir == "":
         os.makedirs(outputdir, exist_ok=True)
     cluster_names = list()
-    i = 0
     contrast_list = list()
 
-    # Only use ANANSE on clusters with more than 50 cells
+    # Only use ANANSE on clusters with more than minimal amount of cells
     for cluster in adata.obs[cluster_id].astype("category").unique():
-        n_cells = adata.obs[cluster_id].value_counts()[i]
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
 
         if n_cells > min_cells:
             cluster_names.append(str(cluster))
             additional_contrasts_2 = str("anansesnake_" + cluster + "_average")
             contrast_list += [additional_contrasts_2]
-        i = (
-            i + 1
-        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # lets generate the snakemake sample file
     cluster_names_contrast = cluster_names
@@ -279,7 +261,6 @@ def DEGS_scANANSE(
     os.makedirs(outputdir + "/deseq2/", exist_ok=True)
     adata.obs[cluster_id] = adata.obs[cluster_id].astype("category")
     cluster_names = list()
-    i = 0
     contrast_list = list()
 
     # Normalize the raw count data
@@ -289,18 +270,15 @@ def DEGS_scANANSE(
 
     for cluster in adata.obs[cluster_id].astype("category").unique():
 
-        # Only use ANANSE on clusters with more than the min_cells
-        n_cells = adata.obs[cluster_id].value_counts()[i]
+        # Only use ANANSE on clusters with more than minimal amount of cells
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
 
         if n_cells > min_cells:
             additional_contrasts_2 = str("anansesnake_" + cluster + "_average")
             contrast_list += [additional_contrasts_2]
             cluster_names.append(cluster)
-        i = (
-            i + 1
-        )  # Increase i to add clusters iteratively to the cluster_names list
 
-    # Select only cells for the average that have min_cells or more
+    # Select only cells for the average that have the minimal amount of cells or more
     adata = adata[adata.obs[cluster_id].isin(cluster_names)].copy()
 
     # lets generate the snakemake config file
