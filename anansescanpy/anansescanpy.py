@@ -1,5 +1,5 @@
 """
-A collection of functions
+Collection of AnanseScanpy functions
 """
 import os
 import numpy as np
@@ -59,9 +59,9 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
             NumNonZeroElementsByColumn = [X_clone2.sum(0)]
             FPKM_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
             
-            i = (
-                i + 1
-            )  # Increase i to add clusters iteratively to the cluster_names list
+        i = (
+            i + 1
+        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # Specify the df.index
     df = adata.T.to_df()
@@ -92,7 +92,6 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
     """export_ATAC_scANANSE
     This functions exports peak values from an anndata object on the sparce peak count matrix: anndata.X.
     This requires setting the peak count matrix as anndata.X
-
     Params:
     ---
     anndata object
@@ -104,7 +103,7 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
     >>> from anansescanpy import export_ATAC_scANANSE
     >>> export_ATAC_scANANSE(adata)
     """
-    adata = anndata
+    adata = anndata.copy()
     if not outputdir == "":
         os.makedirs(outputdir, exist_ok=True)
     atac_count_lists = list()
@@ -117,22 +116,26 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
         n_cells = adata.obs[cluster_id].value_counts()[i]
 
         if n_cells > min_cells:
-
-            print(
-                str("gather data from " + cluster + " with " + str(n_cells) + " cells")
-            )
             cluster_names.append(str(cluster))
 
             # Generate the raw count file
+            adata_pseudobulk = adata[adata.obs[cluster_id].isin([cluster])].copy()
             adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
+            adata_sel.raw=adata_sel
+            n_cells = int(adata_sel.obs[cluster_id].value_counts())
+            
+            print(
+                str("gather data from " + cluster + " with " + str(n_cells) + " cells")
+            )
+            
             X_clone = adata_sel.X.tocsc()
             X_clone.data = np.ones(X_clone.data.shape)
             NumNonZeroElementsByColumn = X_clone.sum(0)
             atac_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
 
-            i = (
-                i + 1
-            )  # Increase i to add clusters iteratively to the cluster_names list
+        i = (
+            i + 1
+        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # Generate the count matrix df
     atac_count_lists = pd.DataFrame(atac_count_lists)
@@ -187,9 +190,9 @@ def config_scANANSE(
             cluster_names.append(str(cluster))
             additional_contrasts_2 = str("anansesnake_" + cluster + "_average")
             contrast_list += [additional_contrasts_2]
-            i = (
-                i + 1
-            )  # Increase i to add clusters iteratively to the cluster_names list
+        i = (
+            i + 1
+        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # lets generate the snakemake sample file
     cluster_names_contrast = cluster_names
@@ -231,21 +234,20 @@ def config_scANANSE(
     myfile.write("rna_counts: " + str(count_file).strip('"') + "\n")
     myfile.write("atac_samples: " + str(sample_file_location).strip('"') + "\n")
     myfile.write("atac_counts: " + str(Peak_file).strip('"') + "\n")
-    myfile.write("result_dir: " + str(outdir).strip('"') + "\n")
     myfile.write("genome: " + str(genome).strip('"') + "\n")
+    myfile.write("result_dir: " + str(outdir).strip('"') + "\n")
+    myfile.write("contrasts:".strip('"') + "\n")
+    # Adding the additional contrasts to config file
+    for j in range(0, len(contrast_list)):
+        contrast_string = contrast_list[j]
+        print(contrast_string)
+        myfile.write(" " + "- " + '"' + contrast_string + '"' + "\n")    
     myfile.write("database: gimme.vertebrate.v5.0".strip('"') + "\n")
     myfile.write("jaccard: 0.1".strip('"') + "\n")
     myfile.write("edges: 500_000".strip('"') + "\n")
     myfile.write("padj: 0.05".strip('"') + "\n")
     myfile.write("plot_type: ".strip('"') + '"' + img + '"' + "\n")
     myfile.write("get_orthologs: false".strip('"') + "\n")
-    myfile.write("contrasts:".strip('"') + "\n")
-
-    # Adding the additional contrasts to config file
-    for j in range(0, len(contrast_list)):
-        contrast_string = contrast_list[j]
-        print(contrast_string)
-        myfile.write("\t" + "- " + '"' + contrast_string + '"' + "\n")
     myfile.close()
 
 
@@ -294,9 +296,9 @@ def DEGS_scANANSE(
             additional_contrasts_2 = str("anansesnake_" + cluster + "_average")
             contrast_list += [additional_contrasts_2]
             cluster_names.append(cluster)
-            i = (
-                i + 1
-            )  # Increase i to add clusters iteratively to the cluster_names list
+        i = (
+            i + 1
+        )  # Increase i to add clusters iteratively to the cluster_names list
 
     # Select only cells for the average that have min_cells or more
     adata = adata[adata.obs[cluster_id].isin(cluster_names)].copy()
