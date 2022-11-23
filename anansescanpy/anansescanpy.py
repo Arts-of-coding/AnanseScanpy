@@ -2,6 +2,7 @@
 Collection of AnanseScanpy functions
 """
 import os
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -400,4 +401,89 @@ def import_scanpy_scANANSE(
     adata.obs
     
     return output
+    
+
+def export_ATAC_maelstrom(anndata, min_cells=50, outputdir="", 
+                          cluster_id="leiden_new",select_top_rows=True,
+                         n_top_rows=100000):
+    """export_ATAC_maelstrom
+    This functions exports normalized peak values from an anndata object 
+    on the sparce peak count matrix: anndata.X required for maelstrom. 
+    This requires setting the peak count matrix as anndata.X
+    Params:
+    ---
+    anndata object
+    min_cells: minimum of cells a cluster needs to be exported
+    output_dir: directory where the files are outputted
+    cluster_id: ID used for finding clusters of cells
+    select_top_rows: only output the top variable rows, or all rows if false
+    n_top_rows: amount of variable rows to export
+    Usage:
+    ---
+    >>> from anansescanpy import export_ATAC_maelstrom
+    >>> export_ATAC_maelstrom(adata)
+    """
+    adata = anndata.copy()
+    if not outputdir == "":
+        os.makedirs(outputdir, exist_ok=True)
+    atac_count_lists = list()
+    cluster_names = list()
+
+    for cluster in adata.obs[cluster_id].astype("category").unique():
+
+        # Only use appending to df on clusters with more than minimal amount of cells
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
+
+        if n_cells > min_cells:
+            cluster_names.append(str(cluster))
+
+            # Generate the raw count file
+            adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
+            adata_sel.raw=adata_sel
+            
+            print(
+                str("gather data from " + cluster + " with " + str(n_cells) + " cells")
+            )
+            
+            X_clone = adata_sel.X.tocsc()
+            X_clone.data = np.ones(X_clone.data.shape)
+            NumNonZeroElementsByColumn = X_clone.sum(0)
+            atac_count_lists += [list(np.array(NumNonZeroElementsByColumn)[0])]
+
+    # Generate the count matrix df
+    atac_count_lists = pd.DataFrame(atac_count_lists)
+    atac_count_lists = atac_count_lists.transpose()
+
+    atac_count_lists.columns = cluster_names
+    df = adata.T.to_df()
+    atac_count_lists.index = df.index
+    
+    # Normalize the raw counts
+    activity_matrix= atac_count_lists
+    activity_matrix=np.log2(activity_matrix+1)
+    
+    # Import the scaler function from sklearn and scale
+    sc = StandardScaler()
+    sc.fit(activity_matrix)
+    sc.scale_ = np.std(activity_matrix, axis=0, ddof=1).to_list()
+    activity_matrix=sc.transform(activity_matrix)
+    activity_matrix=pd.DataFrame(activity_matrix)
+    activity_matrix.columns = atac_count_lists.columns
+    activity_matrix.index = atac_count_lists.index
+    
+    # Select the n_top_rows with the highest row variance
+    if np.shape(activity_matrix)[0]>n_top_rows:
+        print(
+            str("large dataframe detected, selecting top variable rows n = " + str(n_top_rows))
+            )
+        print("if entire dataframe is required, add select_top_rows = False as a parameter")
+        print("or change ammount of rows via the n_top_rows parameter")
+        activity_matrix["rowvar"]=activity_matrix.var(axis='columns')
+        activity_matrix=activity_matrix.sort_values(by='rowvar', ascending=False)
+        activity_matrix=activity_matrix.head(n_top_rows)
+        activity_matrix=activity_matrix.drop(['rowvar'], axis=1)
+        
+    # Save the activity matrix and peak_file to the output dir
+    activity_file = str(outputdir + "Peaks_scaled.tsv")
+    activity_matrix.to_csv(activity_file, sep="\t", index=True, index_label=False)
     
