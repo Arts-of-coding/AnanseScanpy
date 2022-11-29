@@ -6,7 +6,13 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pandas as pd
 import scanpy as sc
-
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
+from statistics import mean
+from sklearn.preprocessing import StandardScaler
+import scanpy as sc
+import numpy as np
+import re
 
 def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_new"):
     """export_CPM_scANANSE
@@ -487,3 +493,353 @@ def export_ATAC_maelstrom(anndata, min_cells=50, outputdir="",
     activity_file = str(outputdir + "Peaks_scaled.tsv")
     activity_matrix.to_csv(activity_file, sep="\t", index=True, index_label=False)
     
+
+def import_scanpy_maelstrom(
+    anndata,
+    cluster_id="predicted.id",
+    maelstrom_dir="maelstrom/",
+    return_df = False):
+    """import_scanpy_maelstrom
+    This functions imports maelstrom output to the anndata object
+    Params:
+    ---
+    anndata object
+    cluster_id: ID used for finding clusters of cells
+    maelstrom_dir: directory where maelstrom output is located
+    return_df: returns a df if set to True
+    Usage:
+    ---
+    >>> from anansescanpy import scanpy_maelstrom
+    >>> import_scanpy_maelstrom(adata)
+    >>> maelstrom_df = import_scanpy_maelstrom(adata,return_df = True)
+    """
+    adata = anndata
+    
+    # Import the output df from maelstrom
+    maelstrom_df = pd.read_csv(str(maelstrom_dir + "final.out.txt"),sep="\t",index_col=0)
+    maelstrom_cols = [col for col in maelstrom_df.columns if 'z-score' in col]
+    maelstrom_Zscore = maelstrom_df[maelstrom_cols]
+    motif_df=maelstrom_Zscore.transpose()
+    
+    # Generate a maelstrom score dataframe for each motif 
+    # and process the appended_data for anndata
+    motif_df.index = motif_df.index.str.replace('z-score ', '')
+    output=motif_df
+    motif_df= motif_df.add_suffix('_maelstrom')
+    motif_df[cluster_id]= motif_df.index
+
+    # Retrieve the cluster IDs and cell IDs from the anndata object
+    df= pd.DataFrame(adata.obs[cluster_id])
+    df["cells"]=df.index.astype("string")
+
+    # Merge the processed motif_df together with the cell ID df
+    df_obs= motif_df.merge(df, on=cluster_id,how='left')
+    df_obs=df_obs.drop(columns=[cluster_id])
+
+    # Merge the observation dataframe with anndata obs
+    adata.obs["cells"]=adata.obs.index.astype("string")
+    adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
+    adata.obs.index=adata.obs["cells"]
+    adata.obs.index.name = None
+    adata.obs
+
+    if return_df == True:
+        return output
+    else:
+        return
+
+
+def Maelstrom_Motif2TF(
+    anndata,
+    mot_mat=None,
+    m2f_df=None,
+    cluster_id="leiden_new",
+    maelstrom_dir = 'maelstrom/',
+    combine_motifs = 'means',
+    expr_tresh = 10,
+    cor_tresh = 0.30,
+    curated_motifs = False,
+    cor_method = "pearson",
+    outputdir=""):
+    """Maelstrom_Motif2TF
+    This functions creates motif-factor links & export tables for printing motif score alongside its binding factor
+    Params:
+    ---
+    anndata object
+    cluster_id: ID used for finding clusters of cells
+    mot_mat: motif matrix, for instance output from per_cluster_df with the maelstrom option
+    m2f_df: motif to factors dataframe for instance from gimmemotifs containing Motif, Factor and Curated columns
+    maelstrom_dir: directory where maelstrom output is located
+    combine_motifs: combining motifs to individual transcription factors can be done by calculating the means of all linked motifs,
+    by selecting the most correlating motif with gene expression and the most variable motif across input data
+    curated_motifs: option to only select curated motifs
+    cor_method: pearson or spearman
+    outputdir: the output directory where data of scaling is stored
+    Usage:
+    ---
+    >>> from anansescanpy import Maelstrom_Motif2TF
+    >>> Maelstrom_Motif2TF(adata)  
+    """
+    adata=anndata
+    pd.options.mode.chained_assignment = None # set SettingWithCopyWarning to None
+    
+    # Check if m2f_df object provided contains the right columns
+    fields = ['Motif', 'Factor']
+    try:
+        maelstrom_df = pd.read_csv(str(maelstrom_dir + "nonredundant.motifs.motif2factors.txt"),sep="\t", comment='#',
+                                   skipinitialspace=True, usecols=fields)
+    except:
+        print("Provide m2f_df with at least 2 columns with names Motif and Factor.")
+
+
+    # Check when Curated is True if there is a Curated column
+
+    if curated_motifs == True:
+        fields = ['Motif', 'Factor', 'Curated']
+        try:
+            m2f_df = pd.read_csv(str(maelstrom_dir + "nonredundant.motifs.motif2factors.txt"),
+                                 sep="\t", comment='#',
+                                 skipinitialspace=True, usecols=fields)
+            print('using only curated motifs from database')
+            m2f_df=m2f_df[m2f_df['Curated'].isin(['Y'])]
+
+        except:
+            print("Provide m2f_df with at least 3 columns with names Motif, Factor and Curated.")
+    else:
+        m2f_df = maelstrom_df
+
+    ## Load needed objects
+    if mot_mat.empty:
+        print(str('loading maelstrom values from maelstrom assay using the cluster identifier '+cluster_id))
+        mot_mat = per_cluster_df(anndata,
+                                 assay = 'maelstrom',
+                                 cluster_id = cluster_id)
+
+    res = pd.DataFrame(columns=adata.var_names, index=adata.obs[cluster_id].astype("category").unique())                                                                                          
+
+    ## Set up scanpy object based on expression treshold
+    for clust in adata.obs[cluster_id].astype("category").unique(): 
+        res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].raw.X.mean(0)
+    res.loc["sum"]=np.sum(res,axis=0).tolist()
+    res=res.transpose()
+    res=res.loc[res['sum'] > expr_tresh]
+    genes_expressed = res.index.tolist()
+    adata_sel = adata[:, genes_expressed].copy()
+
+    ## Select motifs with binding TFs present in object
+    m2f_df = m2f_df[m2f_df["Factor"].isin(genes_expressed)]
+
+    print(str("Seurat NormalizeData with default settings will be run on all the genes"))
+    sc.pp.normalize_total(adata_sel,inplace=True)
+
+    ## Generate the df with mean normalized expression
+    exp_mat = pd.DataFrame(columns=adata.var_names, index=adata.obs[cluster_id].astype("category").unique())                                                                                          
+
+    for clust in adata.obs[cluster_id].astype("category").unique(): 
+        exp_mat.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.mean(0)
+
+    ## make sure that all genes in matrix have mean expression > 0
+    exp_mat.loc["sum"]=np.sum(exp_mat,axis=0).tolist()
+    exp_mat=exp_mat.transpose()
+    exp_mat=exp_mat.loc[exp_mat['sum'] > 0]
+
+    ## Select the same exp_mat columns as in mot_mat columns (if the grouping var is the same)
+    exp_mat=exp_mat[mot_mat.index.tolist()]
+    exp_mat=exp_mat.transpose()
+
+    ## limit table to motifs and TFs present in dataset
+    mot_mat.columns=mot_mat.columns.str.removesuffix("_maelstrom")
+    mot_mat = mot_mat[m2f_df["Motif"].unique().tolist()]
+    TF_mat = exp_mat[m2f_df["Factor"].unique().tolist()]
+
+    # Correlating the expression data and motif data
+    m2f_df_match = m2f_df
+    cor_list=list()
+    for i in range(len(m2f_df_match.index)):
+        mot=m2f_df_match["Motif"].tolist()[i]
+        tf=m2f_df_match["Factor"].tolist()[i]
+        
+        if cor_method == "pearson":
+            cor_list.append(pearsonr(mot_mat[mot],exp_mat[tf])[0])
+            
+        if cor_method == "spearman":
+            cor_list.append(spearmanr(mot_mat[mot],exp_mat[tf])[0])
+            
+    m2f_df_match["cor"] = cor_list
+    
+    # Calculate the variance of the motifs
+    var_list=mot_mat.var(axis=0)
+    var_list=var_list.to_frame(name="var")
+    var_list["Motif"]=var_list.index
+    m2f_df_match = m2f_df_match.merge(var_list, on='Motif',how='left')
+
+    ## Only keep motif-TF combinations with an absolute R higher than treshold
+    print(str("Only keep motif-TF combinations with an R > "+str(cor_tresh)))
+    m2f_df_match=m2f_df_match.loc[abs(m2f_df_match['cor']) > cor_tresh]
+
+    # Select highest absolute correlation of TF and motif
+    m2f_df_match["abscor"]=abs(m2f_df_match["cor"])
+    m2f_df_unique=m2f_df_match.groupby(["abscor"], as_index=False).max()
+    print(str('total length m2f_df_unique '+ str(len(m2f_df_unique.index))))
+
+    # Select only positive correlations or only negative correlations (repressors)
+    for typeTF in ['TFcor','TFanticor']:
+        m2f = m2f_df_unique
+        if typeTF == 'TFanticor':
+            print("Selecting anticorrelating TFs")
+            m2f= m2f_df_unique.loc[m2f_df_unique['cor'] < 0]
+            print(str('total m2f: '+ str(len(m2f.index))))
+        else:
+            print("Selecting correlating TFs")
+            m2f= m2f_df_unique.loc[m2f_df_unique['cor'] > 0]
+            print(str('total m2f: '+ str(len(m2f.index))))
+
+        ## Order motifs according to m2f
+        mot_plot = mot_mat[m2f["Motif"]]
+        mot_plot = mot_plot.transpose()
+        
+        ## Replace motif name by TF name
+        mot_plot.index= m2f["Factor"]
+        
+        # Extract metadata of motif and factors
+        metadata=m2f
+        m2f=m2f.set_index(mot_plot.index)
+        
+        # Make motif score per TF (selecting most variable motif per TF or make mean of all motifs associated)
+        # Take mean of motifs linked to the same TF
+        if combine_motifs == 'means':
+            print("Take mean motif score of all binding motifs per TF")
+            mot_plot=mot_plot.groupby(["Factor"], as_index=True).mean()
+            
+        # Take the highest correlating   
+        if combine_motifs == 'max_cor':
+            print("Motif best (absolute)correlated to expression is selected per TF")
+            mot_plot["cor"] = m2f["cor"]
+            idx = mot_plot.groupby(['Factor'])['cor'].transform(max) == mot_plot['cor']
+            mot_plot=mot_plot[idx]
+            mot_plot=mot_plot.drop(columns=["cor"])
+        
+        # Take the highest variable motif
+        if combine_motifs == 'max_var':
+            print("Motif best (absolute)correlated to expression is selected per TF")
+            mot_plot["var"] = m2f["var"]
+            idx = mot_plot.groupby(['Factor'])['var'].transform(max) == mot_plot['var']
+            mot_plot=mot_plot[idx]
+            mot_plot=mot_plot.drop(columns=["var"])
+            
+        # order expression matrix and motif matrix the same way
+        mot_plot = mot_plot.transpose()
+        exp_plot = TF_mat[mot_plot.columns.tolist()]
+
+        # Import the scaler function from sklearn and scale
+        exp_plot_scale=exp_plot
+        mot_plot_scale=mot_plot
+
+        scs = StandardScaler()
+        scs.fit(exp_plot_scale)
+        scs.scale_ = np.std(exp_plot_scale, axis=0, ddof=1).to_list()
+        exp_plot_scale=scs.transform(exp_plot_scale)
+        exp_plot_scale=pd.DataFrame(exp_plot_scale)
+        exp_plot_scale.columns = exp_plot.columns
+        exp_plot_scale.index = exp_plot.index
+
+        scs.fit(mot_plot_scale)
+        scs.scale_ = np.std(mot_plot_scale, axis=0, ddof=1).to_list()
+        mot_plot_scale=scs.transform(mot_plot_scale)
+        mot_plot_scale=pd.DataFrame(mot_plot_scale)
+        mot_plot_scale.columns = mot_plot.columns
+        mot_plot_scale.index = mot_plot.index
+
+        expression_file = str(outputdir+typeTF+"_expression_means_scaled.tsv")
+        exp_plot_scale.to_csv(expression_file, sep="\t", index=True, index_label=False)
+
+        motif_file = str(outputdir+typeTF+"_motif_intensities_scaled.tsv")
+        mot_plot_scale.to_csv(motif_file, sep="\t", index=True, index_label=False)
+
+        # Generate a scaled TF motif score dataframe and process the appended_data for anndata
+        mot_plot_scale= mot_plot_scale.add_suffix(str('_'+typeTF+'_score'))
+        mot_plot_scale[cluster_id]= mot_plot_scale.index
+
+        # Retrieve the cluster IDs and cell IDs from the anndata object
+        df= pd.DataFrame(adata.obs[cluster_id])
+        df["cells"]=df.index.astype("string")
+
+        # Merge the processed motif_df together with the cell ID df
+        df_obs= mot_plot_scale.merge(df, on=cluster_id,how='left')
+        df_obs=df_obs.drop(columns=[cluster_id])
+
+        # Merge the observation dataframe with anndata obs
+        adata.obs["cells"]=adata.obs.index.astype("string")
+        adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
+        adata.obs.index=adata.obs["cells"]
+        adata.obs.index.name = None
+        
+        # Generate a scaled TF expression score dataframe and process the appended_data for anndata
+        exp_plot_scale= exp_plot_scale.add_suffix(str('_'+typeTF+'_expression_score'))
+        exp_plot_scale[cluster_id]= exp_plot_scale.index
+
+        # Retrieve the cluster IDs and cell IDs from the anndata object
+        df= pd.DataFrame(adata.obs[cluster_id])
+        df["cells"]=df.index.astype("string")
+
+        # Merge the processed motif_df together with the cell ID df
+        df_obs= exp_plot_scale.merge(df, on=cluster_id,how='left')
+        df_obs=df_obs.drop(columns=[cluster_id])
+
+        # Merge the observation dataframe with anndata obs
+        adata.obs["cells"]=adata.obs.index.astype("string")
+        adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
+        adata.obs.index=adata.obs["cells"]
+        adata.obs.index.name = None
+        
+        # Add the metadata of motifs to factors in a dataframe in uns
+        adata.uns[str(typeTF+"_"+combine_motifs)]=metadata
+
+
+def per_cluster_df(
+    anndata,
+    assay='influence',
+    cluster_id='leiden_new'):
+    """per_cluster_df
+    This functions creates motif-factor links & export tables for printing motif score alongside its binding factor
+    Params:
+    ---
+    anndata object
+    cluster_id: ID used for finding clusters of cells
+    assay: influence or maelstrom if they were added previously to the anndata object
+    Usage:
+    ---
+    >>> from anansescanpy import per_cluster_df
+    >>> per_cluster_df(adata)  
+    """
+    cluster_names = list()
+    bulk_data = list()
+    adata=anndata.copy()
+    clusters =adata.obs[cluster_id].astype("category").unique()
+
+    # Check if the assay observations exist in the anndata object
+    columns=adata.obs.columns.tolist()
+    if not any(str("_"+assay) in s for s in columns) == True:
+        raise ValueError(str('assay: '+assay+' not found in the scanpy object'))    
+    columns_assay = [word for word in columns if assay in word]
+
+    for cluster in adata.obs[cluster_id].astype("category").unique():
+        adata_sel = adata[adata.obs[cluster_id].isin([cluster])].copy()
+        adata_sel.obs = adata_sel.obs[columns_assay]
+        adata_sel.obs
+
+        if not mean(adata_sel.obs.nunique()) <=1:
+            raise ValueError(str('not all cells of the cluster '+ cluster+' have the same value in the assay '+assay))   
+
+        # Omit clusters that have NA since they have 0 as nunique()
+        if mean(adata_sel.obs.nunique()) ==1:
+            cluster_names.append(str(cluster))
+            bulk_data += [adata_sel.obs.values[:1][0]]
+
+    # Generate the bulk matrix from the assay data
+    bulk_df = pd.DataFrame(bulk_data)
+    bulk_df.index=cluster_names
+    bulk_df.columns=columns_assay
+
+    return bulk_df
+
