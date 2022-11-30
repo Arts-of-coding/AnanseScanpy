@@ -1,4 +1,4 @@
-# AnanseScanpy: implementation of scANANSE for Scanpy objects in Python
+## `AnanseScanpy` package: implementation of scANANSE for Scanpy objects in Python
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/anansescanpy/badges/version.svg)](https://anaconda.org/bioconda/anansescanpy)
 [![PyPI version](https://badge.fury.io/py/anansescanpy.svg)](https://badge.fury.io/py/anansescanpy)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/anansescanpy/README.html)
@@ -54,3 +54,8 @@ $ jupyter notebook
 $ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
 $ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad -O scANANSE/atac_PBMC.h5ad
 ```
+
+### Thanks to:
+
+* Jos Smits and his Seurat equivalent of this package https://github.com/JGASmits/AnanseSeurat
+* Siebren Frohlich and his anansnake implementation https://github.com/vanheeringen-lab/anansnake
