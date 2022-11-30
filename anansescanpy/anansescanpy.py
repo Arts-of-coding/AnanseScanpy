@@ -2,17 +2,14 @@
 Collection of AnanseScanpy functions
 """
 import os
-from sklearn.preprocessing import StandardScaler
+import re
 import numpy as np
 import pandas as pd
 import scanpy as sc
+from statistics import mean
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
-from statistics import mean
 from sklearn.preprocessing import StandardScaler
-import scanpy as sc
-import numpy as np
-import re
 
 def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_new"):
     """export_CPM_scANANSE
@@ -133,9 +130,13 @@ def export_ATAC_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden
     # Generate the count matrix df
     atac_count_lists = pd.DataFrame(atac_count_lists)
     atac_count_lists = atac_count_lists.transpose()
-
     atac_count_lists.columns = cluster_names
     df = adata.T.to_df()
+
+    # Format the chromosome loci if supplied with "-"
+    if not df.index.str.contains(":").any():
+        df.index = df.index.str.replace("-", ":", n=1, case=None, flags=0, regex=None)
+
     atac_count_lists.index = df.index
     atac_count_lists["average"] = atac_count_lists.mean(axis=1)
     atac_count_lists = atac_count_lists.astype("int")
@@ -404,7 +405,7 @@ def import_scanpy_scANANSE(
     adata.obs["cells"]=adata.obs.index.astype("string")
     adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
     adata.obs.index=adata.obs["cells"]
-    adata.obs
+    adata.obs.index.name = None
     
     return output
     
@@ -459,9 +460,13 @@ def export_ATAC_maelstrom(anndata, min_cells=50, outputdir="",
     # Generate the count matrix df
     atac_count_lists = pd.DataFrame(atac_count_lists)
     atac_count_lists = atac_count_lists.transpose()
-
     atac_count_lists.columns = cluster_names
     df = adata.T.to_df()
+
+    # Format the chromosome loci if supplied with "-"
+    if not df.index.str.contains(":").any():
+        df.index = df.index.str.replace("-", ":", n=1, case=None, flags=0, regex=None)
+
     atac_count_lists.index = df.index
     
     # Normalize the raw counts
@@ -541,7 +546,6 @@ def import_scanpy_maelstrom(
     adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
     adata.obs.index=adata.obs["cells"]
     adata.obs.index.name = None
-    adata.obs
 
     if return_df == True:
         return output
@@ -810,7 +814,7 @@ def per_cluster_df(
     Usage:
     ---
     >>> from anansescanpy import per_cluster_df
-    >>> per_cluster_df(adata)  
+    >>> cluster_df = per_cluster_df(adata)  
     """
     cluster_names = list()
     bulk_data = list()
