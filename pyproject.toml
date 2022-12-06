@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anansescanpy"
-version = "0.1.9"
+version = "0.2.1"
 description = "implementation of scANANSE for scanpy objects in Python"
 authors = ["J Arts (Arts-of-coding) <julian.armando.arts@gmail.com>"]
 license = "apache 2.0"
@@ -10,7 +10,7 @@ repository = "https://github.com/Arts-of-coding/AnanseScanpy"
 keywords = ["GRN","single-cell","gene expression","open chromatin","arts-of-coding"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8"
 scanpy = "^1.9.1"
 #numba = "^0.56.3"  # numpy
 numpy = "^1.23.3"

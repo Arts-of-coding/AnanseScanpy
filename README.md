@@ -55,6 +55,19 @@ $ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad -O scANANSE/rn
 $ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad -O scANANSE/atac_PBMC.h5ad
 ```
 
+### installing and running anansnake 
+
+Follow the instructions its respective github page, https://github.com/vanheeringen-lab/anansnake
+Next automatically use the generated files to run GRN analysis using your single cell cluster data:
+
+
+```{bash eval=FALSE}
+snakemake --use-conda --conda-frontend mamba \
+--configfile scANANSE/analysis/config.yaml \
+--snakefile scANANSE/anansnake/Snakefile \
+--resources mem_mb=48_000 --cores 12
+```
+
 ### Thanks to:
 
 * Jos Smits and his Seurat equivalent of this package https://github.com/JGASmits/AnanseSeurat
