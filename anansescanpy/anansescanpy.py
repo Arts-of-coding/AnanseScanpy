@@ -31,6 +31,7 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     # Set the raw data as all genes and reimplement them to rawdata if needed
     if adata.raw is not None:
         adata=adata.raw.to_adata()
+        adata.var_names=adata.var["_index"].tolist()
         adata.raw=adata
     else:
         adata.raw=adata
