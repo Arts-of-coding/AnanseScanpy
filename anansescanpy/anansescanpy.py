@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_new"):
     """export_CPM_scANANSE
     This functions exports CPM values from an anndata object on the raw count sparce matrix: anndata.X
-    This requires setting the raw count matrix as anndata.X
+    This requires having the raw count matrix in anndata.X or adata.raw.X.
     Params:
     ---
     anndata object
@@ -27,8 +27,14 @@ def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_
     >>> export_CPM_scANANSE(adata)
     """
     adata = anndata.copy()
-    adata.layers["counts"] = adata.X
-    adata.raw = adata
+    
+    # Set the raw data as all genes and reimplement them to rawdata if needed
+    if adata.raw is not None:
+        adata=adata.raw.to_adata()
+        adata.raw=adata
+    else:
+        adata.raw=adata
+    
     if not outputdir == "":
         os.makedirs(outputdir, exist_ok=True)
     rna_count_lists = list()
@@ -250,7 +256,7 @@ def DEGS_scANANSE(
     genome_name="hg38",
 ):
     """DEGS_scANANSE
-    Calculate the differential genes needed for ananse influence
+    Calculate the differential genes needed for ANANSE influence.
 
     Params:
     ---
@@ -566,7 +572,8 @@ def Maelstrom_Motif2TF(
     cor_method = "pearson",
     outputdir=""):
     """Maelstrom_Motif2TF
-    This functions creates motif-factor links & export tables for printing motif score alongside its binding factor
+    This functions creates motif-factor links & export tables for printing motif score alongside its binding factor.
+    The anndata object requires raw expression data in either the anndata.X slot or the anndata.raw.X slot for the correlation.
     Params:
     ---
     anndata object
@@ -582,9 +589,9 @@ def Maelstrom_Motif2TF(
     Usage:
     ---
     >>> from anansescanpy import Maelstrom_Motif2TF
-    >>> Maelstrom_Motif2TF(adata)  
+    >>> adata = Maelstrom_Motif2TF(adata)  
     """
-    adata=anndata
+    adata=anndata.copy()
     pd.options.mode.chained_assignment = None # set SettingWithCopyWarning to None
     
     # Check if m2f_df object provided contains the right columns
@@ -613,17 +620,25 @@ def Maelstrom_Motif2TF(
         m2f_df = maelstrom_df
 
     ## Load needed objects
-    if mot_mat.empty:
+    if mot_mat is None:
         print(str('loading maelstrom values from maelstrom assay using the cluster identifier '+cluster_id))
         mot_mat = per_cluster_df(anndata,
                                  assay = 'maelstrom',
                                  cluster_id = cluster_id)
-
+    
+    # Set the raw data as all genes and reimplement them to rawdata if needed
+    if adata.raw is not None:
+        adata=adata.raw.to_adata()
+        adata.raw=adata
+    
     res = pd.DataFrame(columns=adata.var_names, index=adata.obs[cluster_id].astype("category").unique())                                                                                          
 
     ## Set up scanpy object based on expression treshold
-    for clust in adata.obs[cluster_id].astype("category").unique(): 
-        res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].raw.X.mean(0)
+    for clust in adata.obs[cluster_id].astype("category").unique():
+        if adata.raw is not None:
+            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].raw.X.mean(0)
+        else:
+            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.mean(0)
     res.loc["sum"]=np.sum(res,axis=0).tolist()
     res=res.transpose()
     res=res.loc[res['sum'] > expr_tresh]
@@ -798,6 +813,8 @@ def Maelstrom_Motif2TF(
         
         # Add the metadata of motifs to factors in a dataframe in uns
         adata.uns[str(typeTF+"_"+combine_motifs)]=metadata
+        
+    return adata
 
 
 def per_cluster_df(
