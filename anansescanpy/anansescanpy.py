@@ -571,6 +571,7 @@ def Maelstrom_Motif2TF(
     cor_tresh = 0.30,
     curated_motifs = False,
     cor_method = "pearson",
+    save_output= False,
     outputdir=""):
     """Maelstrom_Motif2TF
     This functions creates motif-factor links & export tables for printing motif score alongside its binding factor.
@@ -586,6 +587,7 @@ def Maelstrom_Motif2TF(
     by selecting the most correlating motif with gene expression and the most variable motif across input data
     curated_motifs: option to only select curated motifs
     cor_method: pearson or spearman
+    save_output: save the output of the correlations
     outputdir: the output directory where data of scaling is stored
     Usage:
     ---
@@ -769,12 +771,13 @@ def Maelstrom_Motif2TF(
         mot_plot_scale=pd.DataFrame(mot_plot_scale)
         mot_plot_scale.columns = mot_plot.columns
         mot_plot_scale.index = mot_plot.index
+        
+        if save_output==True:
+            expression_file = str(outputdir+typeTF+"_expression_means_scaled.tsv")
+            exp_plot_scale.to_csv(expression_file, sep="\t", index=True, index_label=False)
 
-        expression_file = str(outputdir+typeTF+"_expression_means_scaled.tsv")
-        exp_plot_scale.to_csv(expression_file, sep="\t", index=True, index_label=False)
-
-        motif_file = str(outputdir+typeTF+"_motif_intensities_scaled.tsv")
-        mot_plot_scale.to_csv(motif_file, sep="\t", index=True, index_label=False)
+            motif_file = str(outputdir+typeTF+"_motif_intensities_scaled.tsv")
+            mot_plot_scale.to_csv(motif_file, sep="\t", index=True, index_label=False)
 
         # Generate a scaled TF motif score dataframe and process the appended_data for anndata
         mot_plot_scale= mot_plot_scale.add_suffix(str('_'+typeTF+'_score'))
