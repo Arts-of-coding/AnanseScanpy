@@ -54,6 +54,7 @@ $ jupyter notebook
 ```
 $ wget https://zenodo.org/record/7446267/files/rna_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
 $ wget https://zenodo.org/record/7446267/files/atac_PBMC.h5ad -O scANANSE/atac_PBMC.h5ad
+```
 
 ### installing and running anansnake 
 
