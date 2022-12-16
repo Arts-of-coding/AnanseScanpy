@@ -50,9 +50,10 @@ $ jupyter notebook
 
 ## For extended documentation see our ipynb vignette with PBMC sample data
 ### Of which the sample data can be downloaded
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7446267.svg)](https://doi.org/10.5281/zenodo.7446267)
 ```
-$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/rna_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
-$ wget https://mbdata.science.ru.nl/jsmits/scANANSE/atac_PBMC.h5ad -O scANANSE/atac_PBMC.h5ad
+$ wget https://zenodo.org/record/7446267/files/rna_PBMC.h5ad -O scANANSE/rna_PBMC.h5ad
+$ wget https://zenodo.org/record/7446267/files/atac_PBMC.h5ad -O scANANSE/atac_PBMC.h5ad
 ```
 
 ### installing and running anansnake 
