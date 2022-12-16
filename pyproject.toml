@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anansescanpy"
-version = "0.2.2"
+version = "0.2.3"
 description = "implementation of scANANSE for scanpy objects in Python"
 authors = ["J Arts (Arts-of-coding) <julian.armando.arts@gmail.com>"]
 license = "apache 2.0"

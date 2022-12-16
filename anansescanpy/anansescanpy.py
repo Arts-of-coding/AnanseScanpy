@@ -6,6 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import matplotlib.pyplot as plt
 from statistics import mean
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
@@ -633,9 +634,12 @@ def Maelstrom_Motif2TF(
     if adata.raw is not None:
         adata=adata.raw.to_adata()
         adata.raw=adata
+        adata.var_names=adata.var["_index"]
+        rawnames=adata.var["_index"].tolist()
+        res = pd.DataFrame(columns=rawnames, index=adata.obs[cluster_id].astype("category").unique())
+    else:
+        res = pd.DataFrame(columns=adata.var_names.tolist(), index=adata.obs[cluster_id].astype("category").unique())
     
-    res = pd.DataFrame(columns=adata.var_names, index=adata.obs[cluster_id].astype("category").unique())                                                                                          
-
     ## Set up scanpy object based on expression treshold
     for clust in adata.obs[cluster_id].astype("category").unique():
         if adata.raw is not None:
@@ -655,8 +659,7 @@ def Maelstrom_Motif2TF(
     sc.pp.normalize_total(adata_sel,inplace=True)
 
     ## Generate the df with mean normalized expression
-    exp_mat = pd.DataFrame(columns=adata.var_names, index=adata.obs[cluster_id].astype("category").unique())                                                                                          
-
+    exp_mat = pd.DataFrame(columns=adata.var_names.tolist(), index=adata.obs[cluster_id].astype("category").unique())                                                                                          
     for clust in adata.obs[cluster_id].astype("category").unique(): 
         exp_mat.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.mean(0)
 
@@ -868,3 +871,52 @@ def per_cluster_df(
 
     return bulk_df
 
+def Factor_Motif_Plot(
+    anndata,
+    factor_list,
+    assay_maelstrom = 'TFanticor',
+    combine_motifs='max_cor',
+    logo_dir = 'maelstrom/logos/'):
+    """Factor_Motif_Plot2
+    This functions plots expression, the associated motif on the UMAP and the motif itself
+    ---
+    anndata object
+    factor_list: list of transcription factors in the assay of interest
+    assay_maelstrom: either TFanticor (default) or TFcor
+    combine_motifs: max_cor (default) or max_var (does not work for means) see Motif2Factors function
+    logo_dir: the directory where logos of the maelstrom output are located
+    Usage:
+    ---
+    >>> from anansescanpy import Factor_Motif_Plot
+    >>> Factor_Motif_Plot(adata,factor_list=factors)  
+    """
+
+    adata=anndata
+    TF_list=factor_list
+    
+    for i in TF_list:
+        if combine_motifs == "max_var":
+
+            subset=adata.uns[str(assay_maelstrom+"_max_var")][adata.uns[str(assay_maelstrom+"_max_var")]["Factor"]==i]
+            subset2=subset[subset["var"]==subset.var.max()]
+            title=subset2["Motif"].tolist()[0]
+            title = title.replace('.', '_')
+
+        if combine_motifs == "max_cor":
+
+            subset=adata.uns[str(assay_maelstrom+"_max_cor")][adata.uns[str(assay_maelstrom+"_max_cor")]["Factor"]==i]
+            subset2=subset[subset["cor"]==subset.cor.max()]
+            title=subset2["Motif"].tolist()[0]
+            title = title.replace('.', '_')
+
+        # Plot figure together
+        image = plt.imread(str(logo_dir+title+'.png'))
+        fig, axes = plt.subplots(1,3, figsize=(16,4))
+
+        axes[2].axis('off')
+        axes[2].imshow(image)
+
+        sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_expression_score")], cmap="magma", ax=axes[0])
+        sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_score")], cmap="magma",ax=axes[1], title=title)
+
+    return
