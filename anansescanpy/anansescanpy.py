@@ -933,3 +933,4 @@ def Factor_Motif_Plot(
         sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_score")], cmap="RdGy",ax=axes[1], title=title)
 
     return
+   
