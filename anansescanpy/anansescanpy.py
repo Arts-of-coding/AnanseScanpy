@@ -12,6 +12,11 @@ from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from sklearn.preprocessing import StandardScaler
 
+__all__ = ["export_CPM_scANANSE", "export_ATAC_scANANSE", "config_scANANSE","DEGS_scANANSE",
+"per_cluster_df", "import_scanpy_scANANSE", "Maelstrom_Motif2TF", "import_scanpy_maelstrom",
+"Factor_Motif_Plot"
+ ]
+
 def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="leiden_new"):
     """export_CPM_scANANSE
     This functions exports CPM values from an anndata object on the raw count sparce matrix: anndata.X
@@ -634,8 +639,8 @@ def Maelstrom_Motif2TF(
     if adata.raw is not None:
         adata=adata.raw.to_adata()
         adata.raw=adata
-        adata.var_names=adata.var["_index"]
-        rawnames=adata.var["_index"].tolist()
+        adata.var_names=list(adata.var["features"].values)
+        rawnames=list(adata.var["features"].values)
         res = pd.DataFrame(columns=rawnames, index=adata.obs[cluster_id].astype("category").unique())
     else:
         res = pd.DataFrame(columns=adata.var_names.tolist(), index=adata.obs[cluster_id].astype("category").unique())
@@ -643,9 +648,9 @@ def Maelstrom_Motif2TF(
     ## Set up scanpy object based on expression treshold
     for clust in adata.obs[cluster_id].astype("category").unique():
         if adata.raw is not None:
-            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].raw.X.mean(0)
+            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].raw.X.sum(0)
         else:
-            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.mean(0)
+            res.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.sum(0)
     res.loc["sum"]=np.sum(res,axis=0).tolist()
     res=res.transpose()
     res=res.loc[res['sum'] > expr_tresh]
@@ -659,9 +664,9 @@ def Maelstrom_Motif2TF(
     sc.pp.normalize_total(adata_sel,inplace=True)
 
     ## Generate the df with mean normalized expression
-    exp_mat = pd.DataFrame(columns=adata.var_names.tolist(), index=adata.obs[cluster_id].astype("category").unique())                                                                                          
-    for clust in adata.obs[cluster_id].astype("category").unique(): 
-        exp_mat.loc[clust] = adata[adata.obs[cluster_id].isin([clust]),:].X.mean(0)
+    exp_mat = pd.DataFrame(columns=adata_sel.var_names.tolist(), index=adata_sel.obs[cluster_id].astype("category").unique())                                                                                          
+    for clust in adata_sel.obs[cluster_id].astype("category").unique(): 
+        exp_mat.loc[clust] = adata_sel[adata_sel.obs[cluster_id].isin([clust]),:].X.mean(0)
 
     ## make sure that all genes in matrix have mean expression > 0
     exp_mat.loc["sum"]=np.sum(exp_mat,axis=0).tolist()
@@ -704,12 +709,14 @@ def Maelstrom_Motif2TF(
 
     # Select highest absolute correlation of TF and motif
     m2f_df_match["abscor"]=abs(m2f_df_match["cor"])
+
     m2f_df_unique=m2f_df_match.groupby(["abscor"], as_index=False).max()
+    
     print(str('total length m2f_df_unique '+ str(len(m2f_df_unique.index))))
 
     # Select only positive correlations or only negative correlations (repressors)
     for typeTF in ['TFcor','TFanticor']:
-        m2f = m2f_df_unique
+        #m2f = m2f_df_unique
         if typeTF == 'TFanticor':
             print("Selecting anticorrelating TFs")
             m2f= m2f_df_unique.loc[m2f_df_unique['cor'] < 0]
@@ -739,18 +746,24 @@ def Maelstrom_Motif2TF(
         # Take the highest correlating   
         if combine_motifs == 'max_cor':
             print("Motif best (absolute)correlated to expression is selected per TF")
-            mot_plot["cor"] = m2f["cor"]
-            idx = mot_plot.groupby(['Factor'])['cor'].transform(max) == mot_plot['cor']
-            mot_plot=mot_plot[idx]
-            mot_plot=mot_plot.drop(columns=["cor"])
+            mot_plot["abscor"] = m2f["abscor"]
+            mot_plot["Motif"] = m2f["Motif"]
+            mot_plot["TF"] = m2f["Factor"]
+            mot_plot = mot_plot.sort_values(by='abscor', ascending=False)
+            mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
+            mot_plot = mot_plot.drop_duplicates('TF', keep='first')
+            mot_plot=mot_plot.drop(columns=["abscor","Motif","TF"])
         
         # Take the highest variable motif
         if combine_motifs == 'max_var':
             print("Motif best (absolute)correlated to expression is selected per TF")
             mot_plot["var"] = m2f["var"]
-            idx = mot_plot.groupby(['Factor'])['var'].transform(max) == mot_plot['var']
-            mot_plot=mot_plot[idx]
-            mot_plot=mot_plot.drop(columns=["var"])
+            mot_plot["Motif"] = m2f["Motif"]
+            mot_plot["TF"] = m2f["Factor"]
+            mot_plot = mot_plot.sort_values(by='var', ascending=False)
+            mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
+            mot_plot = mot_plot.drop_duplicates('TF', keep='first')
+            mot_plot=mot_plot.drop(columns=["var","Motif","TF"])
             
         # order expression matrix and motif matrix the same way
         mot_plot = mot_plot.transpose()
@@ -776,10 +789,10 @@ def Maelstrom_Motif2TF(
         mot_plot_scale.index = mot_plot.index
         
         if save_output==True:
-            expression_file = str(outputdir+typeTF+"_expression_means_scaled.tsv")
+            expression_file = str(outputdir+typeTF+"_expression_"+combine_motifs+"_scaled.tsv")
             exp_plot_scale.to_csv(expression_file, sep="\t", index=True, index_label=False)
 
-            motif_file = str(outputdir+typeTF+"_motif_intensities_scaled.tsv")
+            motif_file = str(outputdir+typeTF+"_motif_intensities"+combine_motifs+"_scaled.tsv")
             mot_plot_scale.to_csv(motif_file, sep="\t", index=True, index_label=False)
 
         # Generate a scaled TF motif score dataframe and process the appended_data for anndata
@@ -789,7 +802,7 @@ def Maelstrom_Motif2TF(
         # Retrieve the cluster IDs and cell IDs from the anndata object
         df= pd.DataFrame(adata.obs[cluster_id])
         df["cells"]=df.index.astype("string")
-
+        
         # Merge the processed motif_df together with the cell ID df
         df_obs= mot_plot_scale.merge(df, on=cluster_id,how='left')
         df_obs=df_obs.drop(columns=[cluster_id])
@@ -817,7 +830,7 @@ def Maelstrom_Motif2TF(
         adata.obs = adata.obs.merge(df_obs, on='cells',how='left')
         adata.obs.index=adata.obs["cells"]
         adata.obs.index.name = None
-        
+                
         # Add the metadata of motifs to factors in a dataframe in uns
         adata.uns[str(typeTF+"_"+combine_motifs)]=metadata
         
@@ -916,7 +929,8 @@ def Factor_Motif_Plot(
         axes[2].axis('off')
         axes[2].imshow(image)
 
-        sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_expression_score")], cmap="magma", ax=axes[0])
-        sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_score")], cmap="magma",ax=axes[1], title=title)
+        sc.pl.umap(adata,show=False, color=[str(i)], cmap="Blues", ax=axes[0])
+        sc.pl.umap(adata,show=False, color=[str(i+"_"+assay_maelstrom+"_score")], cmap="RdGy",ax=axes[1], title=title)
 
     return
+   
