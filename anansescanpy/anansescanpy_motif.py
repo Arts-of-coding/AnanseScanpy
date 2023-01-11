@@ -137,12 +137,12 @@ def Maelstrom_Motif2TF(
         tf=m2f_df_match["Factor"].tolist()[i]
         
         if cor_method == "pearson":
-            pearson_test = pearsonr(mot_mat[mot],exp_mat[tf])
-            cor_list.append(pearson_test[0])
+            cor_test = pearsonr(mot_mat[mot],exp_mat[tf])
             
         elif cor_method == "spearman":
-            spearman_test = spearmanr(mot_mat[mot],exp_mat[tf])
-            cor_list.append(spearman_test[0])
+            cor_test = spearmanr(mot_mat[mot],exp_mat[tf])
+            
+        cor_list.append(cor_test[0])
             
     m2f_df_match["cor"] = cor_list
     
@@ -169,11 +169,12 @@ def Maelstrom_Motif2TF(
         if typeTF == 'TFanticor':
             print("Selecting anticorrelating TFs")
             m2f= m2f_df_unique.loc[m2f_df_unique['cor'] < 0]
-            print(str('total m2f: '+ str(len(m2f.index))))
+
         else:
             print("Selecting correlating TFs")
             m2f= m2f_df_unique.loc[m2f_df_unique['cor'] > 0]
-            print(str('total m2f: '+ str(len(m2f.index))))
+
+        print(str('total m2f: '+ str(len(m2f.index))))
 
         ## Order motifs according to m2f
         mot_plot = mot_mat[m2f["Motif"]]
@@ -201,15 +202,15 @@ def Maelstrom_Motif2TF(
             # Take the highest correlating motif
             if combine_motifs == 'max_cor':
                 print("Motif best (absolute)correlated to expression is selected per TF")
-                mot_plot_cor = mot_plot.sort_values(by='abscor', ascending=False)
-                col_list=["abscor","Motif","TF"]
+                sorted_value="abscor"
                 
             # Take the highest variable motif    
             if combine_motifs == 'max_var':
                 print("The highest variable motif associated is selected per TF")
-                mot_plot_var = mot_plot.sort_values(by='var', ascending=False)
-                col_list=["var","Motif","TF"]
+                sorted_value="var"
                 
+            col_list=[sorted_value,"Motif","TF"]
+            mot_plot = mot_plot.sort_values(by=sorted_value, ascending=False)
             mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
             mot_plot = mot_plot.drop_duplicates('TF', keep='first')
             mot=mot_plot.drop(columns=col_list)
