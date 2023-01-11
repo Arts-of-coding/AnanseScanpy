@@ -3,6 +3,8 @@
 [![PyPI version](https://badge.fury.io/py/anansescanpy.svg)](https://badge.fury.io/py/anansescanpy)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/anansescanpy/README.html)
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/anansescanpy/badges/downloads.svg)](https://anaconda.org/bioconda/anansescanpy)
+[![Maintainability](https://api.codeclimate.com/v1/badges/04272eaade7b247b4af2/maintainability)](https://codeclimate.com/github/Arts-of-coding/AnanseScanpy/maintainability)
+
 
 ## Installation
 
