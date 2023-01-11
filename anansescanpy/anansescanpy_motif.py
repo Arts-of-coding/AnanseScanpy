@@ -194,10 +194,7 @@ def Maelstrom_Motif2TF(
             mot_plot=mot_plot.groupby(["Factor"], as_index=True).mean()
             
         if combine_motifs == 'max_cor' or combine_motifs == 'max_var':
-            mot_plot["var"] = m2f["var"]
-            mot_plot["abscor"] = m2f["abscor"]
-            mot_plot["Motif"] = m2f["Motif"]
-            mot_plot["TF"] = m2f["Factor"]
+            mot_plot = mot_plot.assign(var=m2f["var"],abscor=m2f["abscor"],TF=m2f["Factor"],Motif=m2f["Motif"])
             
             # Take the highest correlating motif
             if combine_motifs == 'max_cor':
@@ -208,12 +205,11 @@ def Maelstrom_Motif2TF(
             if combine_motifs == 'max_var':
                 print("The highest variable motif associated is selected per TF")
                 sorted_value="var"
-                
-            col_list=[sorted_value,"Motif","TF"]
+
             mot_plot = mot_plot.sort_values(by=sorted_value, ascending=False)
             mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
             mot_plot = mot_plot.drop_duplicates('TF', keep='first')
-            mot=mot_plot.drop(columns=col_list)
+            mot_plot = mot_plot.drop(columns=["var","abscor","TF","Motif"])
             
         # order expression matrix and motif matrix the same way
         mot_plot = mot_plot.transpose()
@@ -222,7 +218,7 @@ def Maelstrom_Motif2TF(
         # Import the scaler function from sklearn and scale
         exp_plot_scale=exp_plot
         mot_plot_scale=mot_plot
-
+        
         scs = StandardScaler()
         scs.fit(exp_plot_scale)
         scs.scale_ = np.std(exp_plot_scale, axis=0, ddof=1).to_list()
