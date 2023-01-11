@@ -202,17 +202,17 @@ def Maelstrom_Motif2TF(
             if combine_motifs == 'max_cor':
                 print("Motif best (absolute)correlated to expression is selected per TF")
                 mot_plot_cor = mot_plot.sort_values(by='abscor', ascending=False)
-                mot_plot_cor = mot_plot_cor.drop_duplicates('Motif', keep='first')
-                mot_plot_cor = mot_plot_cor.drop_duplicates('TF', keep='first')
-                mot_plot=mot_plot_cor.drop(columns=["abscor","Motif","TF"])
-        
-            # Take the highest variable motif
+                col_list=["abscor","Motif","TF"]
+                
+            # Take the highest variable motif    
             if combine_motifs == 'max_var':
                 print("The highest variable motif associated is selected per TF")
                 mot_plot_var = mot_plot.sort_values(by='var', ascending=False)
-                mot_plot_var = mot_plot_var.drop_duplicates('Motif', keep='first')
-                mot_plot_var = mot_plot_var.drop_duplicates('TF', keep='first')
-                mot_plot=mot_plot_var.drop(columns=["var","Motif","TF"])
+                col_list=["var","Motif","TF"]
+                
+            mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
+            mot_plot = mot_plot.drop_duplicates('TF', keep='first')
+            mot=mot_plot.drop(columns=col_list)
             
         # order expression matrix and motif matrix the same way
         mot_plot = mot_plot.transpose()
