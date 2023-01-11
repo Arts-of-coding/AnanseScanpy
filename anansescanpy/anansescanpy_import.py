@@ -11,6 +11,91 @@ from statistics import mean
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from sklearn.preprocessing import StandardScaler
+from .anansescanpy_export import add_contrasts
+
+def config_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster",genome="./scANANSE/data/hg38",additional_contrasts=None):
+    """config_scANANSE
+    This functions generates a sample file and config file for running Anansnake based on the anndata object
+
+    Params:
+    ---
+    anndata object
+    min_cells: minimum of cells a cluster needs to be exported
+    output_dir: directory where the files are outputted
+    cluster_id: ID used for finding clusters of cells
+    genome: genomepy name or location of the genome fastq file
+    additional_contrasts: additional contrasts to add between clusters within cluster_ID
+    Usage:
+    ---
+    >>> from anansescanpy import config_scANANSE
+    >>> config_scANANSE(adata)
+    """
+    adata = anndata
+    if not outputdir == "":
+        os.makedirs(outputdir, exist_ok=True)
+    cluster_names = list()
+    contrast_list = list()
+
+    # Only use ANANSE on clusters with more than minimal amount of cells
+    for cluster in adata.obs[cluster_id].astype("category").unique():
+        n_cells = adata.obs[cluster_id].value_counts()[cluster]
+
+        if n_cells > min_cells:
+            cluster_names.append(str(cluster))
+            additional_contrasts_2 = str("anansesnake_" + cluster + "_average")
+            contrast_list += [additional_contrasts_2]
+
+    # lets generate the snakemake sample file
+    cluster_names_contrast = cluster_names
+    cluster_names.append("average")
+    sample_file_df = pd.DataFrame(cluster_names, columns=["sample"])
+    sample_file_df.index = cluster_names
+    sample_file_df["assembly"] = os.path.basename(genome)
+    sample_file_df["anansesnake"] = sample_file_df["sample"]
+    sample_file_location = str(outputdir + "samplefile.tsv")
+    sample_file_df.to_csv(sample_file_location, sep="\t", index=False)
+
+    # lets generate the snakemake config file
+    if isinstance(additional_contrasts, list):
+        contrast_list=add_contrasts(contrast_list,additional_contrasts)
+
+    # Retrieve full path from current working directory
+    if outputdir == "":
+        outdir = os.getcwd()
+        outdir = outdir + "/"
+    else:
+        outdir = outputdir
+    file = str(outputdir + "config.yaml")
+
+    # Specify the absolute paths
+    Peak_file = str(outdir + "Peak_Counts.tsv")
+    count_file = str(outdir + "RNA_Counts.tsv")
+    CPM_file = str(outdir + "TPM.tsv")
+    genome = os.path.basename(genome)
+    sample_file_location = str(outdir + "samplefile.tsv")
+    img = "png"
+
+    # Write to config file
+    myfile = open(file, "w")
+    myfile.write("rna_samples: " + str(sample_file_location).strip('"') + "\n")
+    myfile.write("rna_tpms: " + str(CPM_file).strip('"') + "\n")
+    myfile.write("rna_counts: " + str(count_file).strip('"') + "\n")
+    myfile.write("atac_samples: " + str(sample_file_location).strip('"') + "\n")
+    myfile.write("atac_counts: " + str(Peak_file).strip('"') + "\n")
+    myfile.write("genome: " + str(genome).strip('"') + "\n")
+    myfile.write("result_dir: " + str(outdir).strip('"') + "\n")
+    myfile.write("contrasts:".strip('"') + "\n")
+    # Adding the additional contrasts to config file
+    for j in range(0, len(contrast_list)):
+        contrast_string = contrast_list[j]
+        print(contrast_string)
+        myfile.write(" " + "- " + '"' + contrast_string + '"' + "\n")    
+    myfile.write("database: gimme.vertebrate.v5.0".strip('"') + "\n")
+    for config_parameter in ["jaccard: 0.1","edges: 500_000","padj: 0.05","get_orthologs: false"]:
+        myfile.write(str(config_parameter).strip('"') + "\n")
+    myfile.write("plot_type: ".strip('"') + '"' + img + '"' + "\n")
+    myfile.close()
+
 
 def import_scanpy_scANANSE(
     anndata,
