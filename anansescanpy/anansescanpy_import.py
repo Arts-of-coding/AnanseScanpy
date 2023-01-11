@@ -11,7 +11,7 @@ from statistics import mean
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from sklearn.preprocessing import StandardScaler
-from .anansescanpy_import import add_contrasts
+from .anansescanpy_export import add_contrasts
 
 def config_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster",genome="./scANANSE/data/hg38",additional_contrasts=None):
     """config_scANANSE
