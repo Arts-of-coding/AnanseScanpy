@@ -12,6 +12,14 @@ from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from sklearn.preprocessing import StandardScaler
 
+def add_contrasts(condition_list,additional_contrasts):        
+    print("adding additional contrasts")
+    for i in range(0, len(additional_contrasts)):
+        additional_contrasts_2 = str("anansesnake_" + additional_contrasts[i])
+        condition_list += [additional_contrasts_2]
+        
+    return condition_list
+
 def export_CPM_scANANSE(anndata, min_cells=50, outputdir="", cluster_id="scanpy_cluster"):
     """export_CPM_scANANSE
     This functions exports CPM values from an anndata object on the raw count sparce matrix: anndata.X
@@ -196,10 +204,7 @@ def DEGS_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster",
 
     # lets generate the snakemake config file
     if isinstance(additional_contrasts, list):
-        print("adding additional contrasts")
-        for i in range(0, len(additional_contrasts)):
-            additional_contrasts_2 = str("anansesnake_" + additional_contrasts[i])
-            contrast_list += [additional_contrasts_2]
+        contrast_list=add_contrasts(contrast_list,additional_contrasts)
 
     for j in range(0, len(contrast_list)):
         print("calculating DEGS for contrast " + contrast_list[j])
