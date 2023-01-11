@@ -99,7 +99,7 @@ def config_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster
 
 def import_scanpy_scANANSE(
     anndata,
-    cluster_id = 'leiden_new',
+    cluster_id = 'scanpy_cluster',
     anansnake_inf_dir = 'None',
     unified_contrast='average'
 ):
@@ -164,7 +164,7 @@ def import_scanpy_scANANSE(
 
 def import_scanpy_maelstrom(
     anndata,
-    cluster_id="predicted.id",
+    cluster_id="scanpy_cluster",
     maelstrom_dir="maelstrom/",
     return_df = False):
     """import_scanpy_maelstrom
@@ -218,7 +218,7 @@ def import_scanpy_maelstrom(
 def per_cluster_df(
     anndata,
     assay='influence',
-    cluster_id='leiden_new'):
+    cluster_id='scanpy_cluster'):
     """per_cluster_df
     This functions creates motif-factor links & export tables for printing motif score alongside its binding factor
     Params:
