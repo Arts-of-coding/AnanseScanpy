@@ -11,6 +11,7 @@ from statistics import mean
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 from sklearn.preprocessing import StandardScaler
+from .anansescanpy_import import add_contrasts
 
 def config_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster",genome="./scANANSE/data/hg38",additional_contrasts=None):
     """config_scANANSE
@@ -56,10 +57,7 @@ def config_scANANSE(anndata,min_cells=50,outputdir="",cluster_id="scanpy_cluster
 
     # lets generate the snakemake config file
     if isinstance(additional_contrasts, list):
-        print("adding additional contrasts")
-        for i in range(0, len(additional_contrasts)):
-            additional_contrasts_2 = str("anansesnake_" + additional_contrasts[i])
-            contrast_list += [additional_contrasts_2]
+        contrast_list=add_contrasts(contrast_list,additional_contrasts)
 
     # Retrieve full path from current working directory
     if outputdir == "":
