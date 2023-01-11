@@ -205,8 +205,7 @@ def Maelstrom_Motif2TF(
             if combine_motifs == 'max_var':
                 print("The highest variable motif associated is selected per TF")
                 sorted_value="var"
-                
-            col_list=["abscor","var","Motif","TF"]
+
             mot_plot = mot_plot.sort_values(by=sorted_value, ascending=False)
             mot_plot = mot_plot.drop_duplicates('Motif', keep='first')
             mot_plot = mot_plot.drop_duplicates('TF', keep='first')
