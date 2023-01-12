@@ -1,0 +1,21 @@
+version: "2"
+
+plugins:
+  duplication:
+    enabled: true
+    config:
+      count_threshold: 3
+
+checks:
+  method-complexity:
+    enabled: true
+    config:
+      threshold: 15
+  argument-count:
+    enabled: false
+    config:
+      threshold: 4
+  method-lines:
+    enabled: true
+    config:
+      threshold: 40
