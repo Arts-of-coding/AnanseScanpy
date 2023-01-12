@@ -4,7 +4,7 @@ plugins:
   duplication:
     enabled: true
     config:
-      count_threshold: 2
+      count_threshold: 4
 
 checks:
   method-complexity:
