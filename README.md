@@ -31,11 +31,16 @@ $ pip install anansescanpy
 
 ### Install package through GitHub
 ```
-git clone https://github.com/Arts-of-coding/AnanseScanpy.git
-cd AnanseScanpy
-conda env create -f requirements.yaml
-conda activate AnanseScanpy
-pip install -e .
+$ git clone https://github.com/Arts-of-coding/AnanseScanpy.git
+$ cd AnanseScanpy
+$ conda env create -f requirements.yaml
+$ conda activate AnanseScanpy
+$ pip install -e .
+```
+
+### Install Jupyter Notebook
+```
+$ pip install jupyter
 ```
 
 ## Start using the package
