@@ -1,4 +1,4 @@
-__version__ = "0.2.6"
+__version__ = "1.0.0"
 
 from .anansescanpy_export import export_CPM_scANANSE
 from .anansescanpy_export import export_ATAC_scANANSE
