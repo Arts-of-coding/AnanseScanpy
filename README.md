@@ -81,3 +81,6 @@ snakemake --use-conda --conda-frontend mamba \
 
 * Jos Smits and his Seurat equivalent of this package https://github.com/JGASmits/AnanseSeurat
 * Siebren Frohlich and his anansnake implementation https://github.com/vanheeringen-lab/anansnake
+
+### How to cite this software:
+Smits JGA, Arts JA, Frölich S et al. scANANSE gene regulatory network and motif analysis of single-cell clusters [version 1; peer review: awaiting peer review]. F1000Research 2023, 12:243 (https://doi.org/10.12688/f1000research.130530.1)
